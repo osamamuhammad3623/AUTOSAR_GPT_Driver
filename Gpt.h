@@ -94,7 +94,7 @@
 typedef uint8 Gpt_ChannelType;
 
 /* Type for reading and setting the timer values (in number of ticks). */
-typedef uint8 Gpt_ValueType;
+typedef uint64 Gpt_ValueType;
 
 /* Enum to allow the selection of different power modes. */
 typedef enum{
