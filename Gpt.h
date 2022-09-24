@@ -145,19 +145,27 @@ typedef struct
  *                      Function Prototypes                                    *
 *******************************************************************************/
 /* Returns the version information of this module. */
+#if (GPT_VERSION_INFO_API == STD_ON)
 void Gpt_GetVersionInfo(Std_VersionInfoType* VersionInfoPtr); 
+#endif
 
 /* Initializes the hardware timer module. */
 void Gpt_Init(const Gpt_ConfigType* ConfigPtr);
 
 /* Deinitializes all hardware timer channels. */
+#if (GPT_DEINIT_API == STD_ON)
 void Gpt_DeInit(void);
+#endif
 
 /* Returns the time already elapsed. */
+#if (GPT_TIME_ELAPSED_API == STD_ON)
 Gpt_ValueType Gpt_GetTimeElapsed(Gpt_ChannelType Channel);
+#endif
 
 /* Returns the time remaining until the target time is reached. */
+#if (GPT_TIME_REMAINING_API == STD_ON)
 Gpt_ValueType Gpt_GetTimeRemaining(Gpt_ChannelType Channel);
+#endif
 
 /* Starts a timer channel. */
 void Gpt_StartTimer( Gpt_ChannelType Channel,Gpt_ValueType Value);
@@ -165,12 +173,15 @@ void Gpt_StartTimer( Gpt_ChannelType Channel,Gpt_ValueType Value);
 /* Stops a timer channel. */
 void Gpt_StopTimer(Gpt_ChannelType Channel);
 
+#if (GPT_ENABLE_DISABLE_NOTIFICATION_API == STD_ON)
 /* Enables the interrupt notification for a channel (relevant in normal mode) */
 void Gpt_EnableNotification(Gpt_ChannelType Channel);
 
 /* Disables the interrupt notification for a channel (relevant in normal mode) */
 void Gpt_DisableNotification(Gpt_ChannelType Channel);
+#endif
 
+#if (GPT_WAKEUP_FUNCTIONALITY_API == STD_ON)
 /* Sets the operation mode of the GPT. */
 void Gpt_SetMode(Gpt_ModeType Mode);
 
@@ -179,6 +190,7 @@ void Gpt_DisableWakeup(Gpt_ChannelType Channel);
 
 /* Enables the wakeup interrupt of a channel (relevant in sleep mode). */
 void Gpt_EnableWakeup(Gpt_ChannelType Channel);
+#endif
 
 /* NOT IMPLEMENTED */
 //void Gpt_CheckWakeup(EcuM_WakeupSourceType WakeupSource);
