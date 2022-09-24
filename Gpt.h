@@ -73,7 +73,9 @@
 /******************************************************************************
  *                      API Service Id Macros                                 *
 ******************************************************************************/
-
+#define GPT_GET_VERSION_INFO_SID    (uint8)0x00
+#define GPT_INIT_SID                (uint8)0x01
+#define GPT_DEINIT_SID              (uint8)0x02
 
 /*******************************************************************************
  *                              Module Data Types                              *
@@ -147,5 +149,39 @@ void Gpt_EnableWakeup(Gpt_ChannelType Channel);
 *******************************************************************************/
 /* Extern PB structures to be used by Gpt and other modules */
 extern const Gpt_ConfigType Gpt_Configuration;
+
+/*******************************************************************************
+ *                       Timers IDs                                           *
+*******************************************************************************/
+/* 16/32-bit timers */
+#define GPT_TIMER0A       (uint8)0
+#define GPT_TIMER0B       (uint8)1
+#define GPT_TIMER1A       (uint8)2
+#define GPT_TIMER1B       (uint8)3
+#define GPT_TIMER2A       (uint8)4
+#define GPT_TIMER2B       (uint8)5
+#define GPT_TIMER3A       (uint8)6
+#define GPT_TIMER3B       (uint8)7
+#define GPT_TIMER4A       (uint8)8
+#define GPT_TIMER4B       (uint8)9
+#define GPT_TIMER5A       (uint8)10
+#define GPT_TIMER6B       (uint8)11
+
+/* 32/64-bit timers */
+#define GPT_WIDE_TIMER0A        (uint8)0
+#define GPT_WIDE_TIMER0B        (uint8)1
+#define GPT_WIDE_TIMER1A        (uint8)2
+#define GPT_WIDE_TIMER1B        (uint8)3
+#define GPT_WIDE_TIMER2A        (uint8)4
+#define GPT_WIDE_TIMER2B        (uint8)5
+#define GPT_WIDE_TIMER3A        (uint8)6
+#define GPT_WIDE_TIMER3B        (uint8)7
+#define GPT_WIDE_TIMER4A        (uint8)8
+#define GPT_WIDE_TIMER4B        (uint8)9
+#define GPT_WIDE_TIMER5A        (uint8)10
+#define GPT_WIDE_TIMER6B        (uint8)11
+
+/* SysTick Timer */
+#define SYSTICK_TIMER           (uint8)12
 
 #endif /* GPT_H */
