@@ -103,22 +103,34 @@ typedef enum{
 
 /* Enum for timer running mode */
 typedef enum{
-  One_Shot, Periodic
+  One_Shot=0x1, Periodic=0x2
 }Gpt_RunningModeType;
+
+/* Enum for timer channel width [16, 32 or 64 bits] */
+typedef enum{
+  TIMER_INDIVIDUAL_MODE=0x4, TIMER_CONCATENATED_MODE=0x0
+}Gpt_TimerType;
+
+typedef enum{
+  Channel_A=0, Channel_B=7, CONCATENATED=0
+}Gpt_TimerChannel;
 
 /* This is the type of the data structure including the configuration set required for
 initializing the GPT timer unit[channel].
   1. Timer Id
   2. Running mode [one-shot or periodic]
   3. Power mode [normal or sleep mode]
+  4. Timer type [16, 32 or 64 bits]
   // Timer value are set by Gpt_StartTimer api
   // Notification [interrupt] are disabled by default, and enabled by Gpt_EnableNotification api
 */
 typedef struct
 {
   Gpt_ChannelType channel_id;
+  Gpt_TimerChannel timer_channel;
   Gpt_RunningModeType running_mode;
   Gpt_ModeType power_mode;
+  Gpt_TimerType timer_type;
 
 }Gpt_ConfigChannel;
 
@@ -182,19 +194,32 @@ extern const Gpt_ConfigType Gpt_Configuration;
 /*******************************************************************************
  *                       Timers IDs                                           *
 *******************************************************************************/
+#define GPT_TIMER0_ID       (uint8)0
+#define GPT_TIMER1_ID       (uint8)1
+#define GPT_TIMER2_ID       (uint8)2
+#define GPT_TIMER3_ID       (uint8)3
+
+#define GPT_WTIMER0_ID       (uint8)0
+#define GPT_WTIMER1_ID       (uint8)1
+#define GPT_WTIMER2_ID       (uint8)2
+#define GPT_WTIMER3_ID       (uint8)3
+#define GPT_WTIMER4_ID       (uint8)4
+#define GPT_WTIMER5_ID       (uint8)5
+
+
+/*******************************************************************************
+ *                      GPT Channel Types                                    *
+*******************************************************************************/
+
 /* 16/32-bit timers */
-#define GPT_TIMER0A       (uint8)0
-#define GPT_TIMER0B       (uint8)1
-#define GPT_TIMER1A       (uint8)2
-#define GPT_TIMER1B       (uint8)3
-#define GPT_TIMER2A       (uint8)4
-#define GPT_TIMER2B       (uint8)5
-#define GPT_TIMER3A       (uint8)6
-#define GPT_TIMER3B       (uint8)7
-#define GPT_TIMER4A       (uint8)8
-#define GPT_TIMER4B       (uint8)9
-#define GPT_TIMER5A       (uint8)10
-#define GPT_TIMER6B       (uint8)11
+#define GPT_TIMER0A        (uint8)0
+#define GPT_TIMER0B        (uint8)1
+#define GPT_TIMER1A        (uint8)2
+#define GPT_TIMER1B        (uint8)3
+#define GPT_TIMER2A        (uint8)4
+#define GPT_TIMER2B        (uint8)5
+#define GPT_TIMER3A        (uint8)6
+#define GPT_TIMER3B        (uint8)7
 
 /* 32/64-bit timers */
 #define GPT_WIDE_TIMER0A        (uint8)0
@@ -208,7 +233,7 @@ extern const Gpt_ConfigType Gpt_Configuration;
 #define GPT_WIDE_TIMER4A        (uint8)8
 #define GPT_WIDE_TIMER4B        (uint8)9
 #define GPT_WIDE_TIMER5A        (uint8)10
-#define GPT_WIDE_TIMER6B        (uint8)11
+#define GPT_WIDE_TIMER5B        (uint8)11
 
 /* SysTick Timer */
 #define SYSTICK_TIMER           (uint8)12
