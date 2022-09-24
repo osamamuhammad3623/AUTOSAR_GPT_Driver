@@ -93,9 +93,12 @@ void Gpt_Init(const Gpt_ConfigType* ConfigPtr){
 
         /* enable timer clock */
         if (Gpt_GptTimers[i].power_mode == GPT_MODE_NORMAL){
-            SET_BIT(SYSCTL_RCGCTIMER_REG, timer_id);
+            SET_BIT(SYSCTL_RCGCTIMER_REG, timer_id); /* enable Run Mode clock */
+            CLEAR_BIT(SYSCTL_SCGCTIMER_REG, timer_id); /* disable Sleep mode clock */
+
         }else if (Gpt_GptTimers[i].power_mode == GPT_MODE_SLEEP){
-            SET_BIT(SYSCTL_SCGCTIMER_REG, timer_id);
+            SET_BIT(SYSCTL_SCGCTIMER_REG, timer_id); /* enable Sleep Mode clock */
+            CLEAR_BIT(SYSCTL_RCGCTIMER_REG, timer_id); /* disable Run mode clock */
         }
 
         /* disable the timer */
@@ -179,6 +182,8 @@ void Gpt_StartTimer( Gpt_ChannelType Channel,Gpt_ValueType Value){
     if (GPT_NOT_INITIALIZED == Gpt_Status){
         return;
     }
+
+
 }
 
 /*
@@ -195,6 +200,42 @@ void Gpt_StopTimer(Gpt_ChannelType Channel){
     if (GPT_NOT_INITIALIZED == Gpt_Status){
         return;
     }
+	volatile uint32* current_timer = NULL_PTR; /* a pointer to indicate what timer we will operate on  */
+
+    /* get the timer base address */
+    switch (Gpt_GptTimers[Channel].channel_id)
+    {
+    case GPT_TIMER0A:
+    case GPT_TIMER0B:
+        current_timer = (volatile uint32*)GPT_TIMER0_BASE_ADDRESS;
+        break;
+    
+    case GPT_TIMER1A:
+    case GPT_TIMER1B:
+        current_timer = (volatile uint32*)GPT_TIMER1_BASE_ADDRESS;
+        break;
+    
+    case GPT_TIMER2A:
+    case GPT_TIMER2B:
+        current_timer = (volatile uint32*)GPT_TIMER2_BASE_ADDRESS;
+        break;
+
+    case GPT_TIMER3A:
+    case GPT_TIMER3B:
+        current_timer = (volatile uint32*)GPT_TIMER3_BASE_ADDRESS;
+        break;
+
+    case SYSTICK_TIMER:
+        CLEAR_BIT(SYSTICK_CTRL_REG, 0); /* disable the timer */
+        return; /* return, no use for other code */
+        break;
+    default:
+        break;
+    }
+
+    /* disable the timer */
+    CLEAR_BIT(*(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMCTL_REG_OFFSET) , Gpt_GptTimers[Channel].timer_channel);
+
 }
 
 /*
@@ -211,6 +252,43 @@ void Gpt_EnableNotification(Gpt_ChannelType Channel){
     if (GPT_NOT_INITIALIZED == Gpt_Status){
         return;
     }
+
+    volatile uint32* current_timer = NULL_PTR; /* a pointer to indicate what timer we will operate on  */
+
+    /* get the timer base address */
+    switch (Gpt_GptTimers[Channel].channel_id)
+    {
+    case GPT_TIMER0A:
+    case GPT_TIMER0B:
+        current_timer = (volatile uint32*)GPT_TIMER0_BASE_ADDRESS;
+        break;
+    
+    case GPT_TIMER1A:
+    case GPT_TIMER1B:
+        current_timer = (volatile uint32*)GPT_TIMER1_BASE_ADDRESS;
+        break;
+    
+    case GPT_TIMER2A:
+    case GPT_TIMER2B:
+        current_timer = (volatile uint32*)GPT_TIMER2_BASE_ADDRESS;
+        break;
+
+    case GPT_TIMER3A:
+    case GPT_TIMER3B:
+        current_timer = (volatile uint32*)GPT_TIMER3_BASE_ADDRESS;
+        break;
+
+    case SYSTICK_TIMER:
+        SET_BIT(SYSTICK_CTRL_REG, 1); /* enable SysTick interrupts */
+        return; /* return, no use for code */
+        break;
+    default:
+        break;
+    }
+
+    /* enable interrupt */
+    SET_BIT(*(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMIMR_REG_OFFSET) , Gpt_GptTimers[Channel].timer_channel);
+
 }
 
 /*
@@ -227,6 +305,43 @@ void Gpt_DisableNotification(Gpt_ChannelType Channel){
     if (GPT_NOT_INITIALIZED == Gpt_Status){
         return;
     }
+
+    volatile uint32* current_timer = NULL_PTR; /* a pointer to indicate what timer we will operate on  */
+
+    /* get the timer base address */
+    switch (Gpt_GptTimers[Channel].channel_id)
+    {
+    case GPT_TIMER0A:
+    case GPT_TIMER0B:
+        current_timer = (volatile uint32*)GPT_TIMER0_BASE_ADDRESS;
+        break;
+    
+    case GPT_TIMER1A:
+    case GPT_TIMER1B:
+        current_timer = (volatile uint32*)GPT_TIMER1_BASE_ADDRESS;
+        break;
+    
+    case GPT_TIMER2A:
+    case GPT_TIMER2B:
+        current_timer = (volatile uint32*)GPT_TIMER2_BASE_ADDRESS;
+        break;
+
+    case GPT_TIMER3A:
+    case GPT_TIMER3B:
+        current_timer = (volatile uint32*)GPT_TIMER3_BASE_ADDRESS;
+        break;
+
+    case SYSTICK_TIMER:
+        CLEAR_BIT(SYSTICK_CTRL_REG, 1); /* enable SysTick interrupts */
+        return; /* return, no use for other code */
+        break;
+    default:
+        break;
+    }
+
+    /* disable interrupt */
+    CLEAR_BIT(*(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMIMR_REG_OFFSET) , Gpt_GptTimers[Channel].timer_channel);
+
 }
 
 /*
@@ -246,6 +361,7 @@ void Gpt_SetMode(Gpt_ModeType Mode){
     if (GPT_NOT_INITIALIZED == Gpt_Status){
         return;
     }
+
 }
 
 /*
