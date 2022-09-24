@@ -39,5 +39,5 @@
 
 /* PB structure used with Gpt_Init API */
 const Gpt_ConfigType Gpt_Configuration = {
-
+  GPT_TIMER0A, Channel_A, Periodic, GPT_MODE_NORMAL, TIMER_INDIVIDUAL_MODE
 };
