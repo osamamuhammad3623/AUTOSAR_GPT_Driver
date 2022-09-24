@@ -68,4 +68,11 @@
 #define SYSCTL_SCGCTIMER_REG            (*((volatile uint32 *)0x400FE704))
 #define SYSCTL_SCGCWTIMER_REG           (*((volatile uint32 *)0x400FE75C))
 
+/* NVIC Registers */
+#define NVIC_EN0_R              (*((volatile uint32 *)0xE000E100))
+#define NVIC_EN1_R              (*((volatile uint32 *)0xE000E104))
+#define NVIC_EN2_R              (*((volatile uint32 *)0xE000E108))
+#define NVIC_EN3_R              (*((volatile uint32 *)0xE000E10C))
+#define NVIC_EN4_R              (*((volatile uint32 *)0xE000E110))
+
 #endif /* GPT_REGS_H */
