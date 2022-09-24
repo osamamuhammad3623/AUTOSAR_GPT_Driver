@@ -117,10 +117,16 @@ typedef enum{
 
 /* This is the type of the data structure including the configuration set required for
 initializing the GPT timer unit[channel].
-  1. Timer Id
-  2. Running mode [one-shot or periodic]
-  3. Power mode [normal or sleep mode]
-  4. Timer type [16, 32 or 64 bits]
+  - Timer Id
+  - Timer channel (channel A, B or concatenated)
+  - Running mode [one-shot or periodic]
+  - Power mode [normal or sleep mode]
+  - Timer type [16, 32 or 64 bits]
+  - Clocks per tick: 
+        // # of clocks per timer tick
+        if it's = 1; then 1 clockcycle = 1 tick (timer will increment/decrement by 1 every clockcycle)
+        if it's = 256; then the timer will increment/decrement once every 256 clockcycles
+        range is [1,256]
   // Timer value are set by Gpt_StartTimer api
   // Notification [interrupt] are disabled by default, and enabled by Gpt_EnableNotification api
 */
@@ -131,6 +137,7 @@ typedef struct
   Gpt_RunningModeType running_mode;
   Gpt_ModeType power_mode;
   Gpt_TimerType timer_type;
+  uint8 clocks_per_tick;
 
 }Gpt_ConfigChannel;
 
