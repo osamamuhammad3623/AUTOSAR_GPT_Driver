@@ -110,12 +110,18 @@ void Gpt_Init(const Gpt_ConfigType* ConfigPtr){
         /* set timer type (individual or concatenated) */
         *(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMCFG_REG_OFFSET) = Gpt_GptTimers[i].timer_type;
 
-        /* set timer running mode (one-shot or periodic) */
-        if (Gpt_GptTimers[i].timer_channel == Channel_A || Gpt_GptTimers[i].timer_channel == CONCATENATED){ // Timer-A
+        if (Gpt_GptTimers[i].timer_channel == Channel_A || Gpt_GptTimers[i].timer_channel == CONCATENATED){
+            /* set timer running mode (one-shot or periodic) */
             *(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMTAMR_REG_OFFSET) |= Gpt_GptTimers[i].running_mode;
-        
+            
+            /* set the count direction to be count-up (from AUTOSAR document) */
+            SET_BIT(*(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMTAMR_REG_OFFSET), 4);
+
         }else if (Gpt_GptTimers[i].timer_channel == Channel_B){
             *(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMTBMR_REG_OFFSET) |= Gpt_GptTimers[i].running_mode;
+        
+            /* set the count direction to be count-up (from AUTOSAR document) */
+            SET_BIT(*(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMTBMR_REG_OFFSET), 4);
         }
 
     }
@@ -210,6 +216,49 @@ Gpt_ValueType Gpt_GetTimeElapsed(Gpt_ChannelType Channel){
     if (GPT_NOT_INITIALIZED == Gpt_Status){
         return 0;
     }
+
+    volatile uint32* current_timer = NULL_PTR; /* a pointer to indicate what timer we will operate on */
+
+    /* get the timer base address */
+    switch (Gpt_GptTimers[Channel].channel_id)
+    {
+    case GPT_TIMER0A:
+    case GPT_TIMER0B:
+        current_timer = (volatile uint32*)GPT_TIMER0_BASE_ADDRESS;
+        break;
+    
+    case GPT_TIMER1A:
+    case GPT_TIMER1B:
+        current_timer = (volatile uint32*)GPT_TIMER1_BASE_ADDRESS;
+        break;
+    
+    case GPT_TIMER2A:
+    case GPT_TIMER2B:
+        current_timer = (volatile uint32*)GPT_TIMER2_BASE_ADDRESS;
+        break;
+
+    case GPT_TIMER3A:
+    case GPT_TIMER3B:
+        current_timer = (volatile uint32*)GPT_TIMER3_BASE_ADDRESS;
+        break;
+
+    case SYSTICK_TIMER:
+        return SYSTICK_CURRENT_REG;
+
+    default:
+        break;
+    }
+
+    uint64 elapsed_time=0;
+    /* to get the elapsed time, get the counted ticks from value register * number of clock cycles per tick */
+    if (Gpt_GptTimers[Channel].timer_channel == Channel_A || Gpt_GptTimers[Channel].timer_channel == CONCATENATED){
+        elapsed_time = (*(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMTAV_REG_OFFSET))*Gpt_GptTimers[Channel].clocks_per_tick;
+    
+    }else if (Gpt_GptTimers[Channel].timer_channel == Channel_B){
+        elapsed_time = (*(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMTBV_REG_OFFSET))*Gpt_GptTimers[Channel].clocks_per_tick;
+    }
+
+    return elapsed_time;
 }
 #endif
 
