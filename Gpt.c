@@ -16,6 +16,7 @@ Parameters (out): VersionInfoPtr Pointer to where to store the version informati
 Return value: None
 Description: Returns the version information of this module.
 */
+#if (GPT_VERSION_INFO_API == STD_ON)
 void Gpt_GetVersionInfo(Std_VersionInfoType* VersionInfoPtr){
     if (NULL_PTR == VersionInfoPtr){
         return;
@@ -31,6 +32,7 @@ void Gpt_GetVersionInfo(Std_VersionInfoType* VersionInfoPtr){
     /* Copy Software Patch Version */
     VersionInfoPtr->sw_patch_version = (uint8)GPT_SW_PATCH_VERSION;
 }
+#endif
 
 /*
 Service ID[hex]: 0x01
@@ -87,6 +89,7 @@ void Gpt_Init(const Gpt_ConfigType* ConfigPtr){
             SET_BIT(SYSTICK_CTRL_REG, 2);  /* set clock source to System Clock */
             return; /* return, no use for other parameters */
             break;
+
         default:
             break;
         }
@@ -104,14 +107,14 @@ void Gpt_Init(const Gpt_ConfigType* ConfigPtr){
         /* disable the timer */
         CLEAR_BIT(*(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMCTL_REG_OFFSET) , Gpt_GptTimers[i].timer_channel);
 
-        /* set timer type (individuale or concatenated) */
+        /* set timer type (individual or concatenated) */
         *(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMCFG_REG_OFFSET) = Gpt_GptTimers[i].timer_type;
 
-        // set timer running mode (one-shot or periodic)
+        /* set timer running mode (one-shot or periodic) */
         if (Gpt_GptTimers[i].timer_channel == Channel_A || Gpt_GptTimers[i].timer_channel == CONCATENATED){ // Timer-A
             *(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMTAMR_REG_OFFSET) |= Gpt_GptTimers[i].running_mode;
         
-        }else { // Timer-B
+        }else if (Gpt_GptTimers[i].timer_channel == Channel_B){
             *(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMTBMR_REG_OFFSET) |= Gpt_GptTimers[i].running_mode;
         }
 
@@ -128,12 +131,69 @@ Parameters (out): None
 Return value: None
 Description: Deinitializes all hardware timer channels. 
 */
+#if (GPT_DEINIT_API == STD_ON)
 void Gpt_DeInit(void){
     if (GPT_NOT_INITIALIZED == Gpt_Status){
         return;
     }
     
+    volatile uint32* current_timer = NULL_PTR; /* a pointer to indicate what timer we will operate on */
+    uint8 timer_id=0;
+    for (uint8 i=0; i<GPT_NUMBER_OF_TIMERS; i++){
+
+        /* get the timer base address */
+        switch (Gpt_GptTimers[i].channel_id)
+        {
+        case GPT_TIMER0A:
+        case GPT_TIMER0B:
+            current_timer = (volatile uint32*)GPT_TIMER0_BASE_ADDRESS;
+            timer_id = GPT_TIMER0_ID;
+            break;
+        
+        case GPT_TIMER1A:
+        case GPT_TIMER1B:
+            current_timer = (volatile uint32*)GPT_TIMER1_BASE_ADDRESS;
+            timer_id = GPT_TIMER1_ID;
+            break;
+        
+        case GPT_TIMER2A:
+        case GPT_TIMER2B:
+            current_timer = (volatile uint32*)GPT_TIMER2_BASE_ADDRESS;
+            timer_id = GPT_TIMER2_ID;
+            break;
+
+        case GPT_TIMER3A:
+        case GPT_TIMER3B:
+            current_timer = (volatile uint32*)GPT_TIMER3_BASE_ADDRESS;
+            timer_id = GPT_TIMER3_ID;
+            break;
+
+        case SYSTICK_TIMER:
+            CLEAR_BIT(SYSTICK_CTRL_REG, 0); /* disable the timer */
+            SYSTICK_CURRENT_REG = 0; /* clear current ticks */
+            CLEAR_BIT(SYSTICK_CTRL_REG, 1); /* disable SysTick interrupts */
+            CLEAR_BIT(SYSTICK_NVIC_INTERRUPT_REG ,15); /* disable systick timer interrupt in NVIC table */
+            return; /* return, no use for other parameters */
+            break;
+
+        default:
+            break;
+        }
+
+        /* disable timer clock */
+        CLEAR_BIT(SYSCTL_RCGCTIMER_REG, timer_id); /* disable Run Mode clock */
+        CLEAR_BIT(SYSCTL_SCGCTIMER_REG, timer_id); /* disable Sleep mode clock */
+
+        /* disable the timer */
+        CLEAR_BIT(*(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMCTL_REG_OFFSET) , Gpt_GptTimers[i].timer_channel);
+
+        /* disable interrupt */
+        CLEAR_BIT(*(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMIMR_REG_OFFSET) , Gpt_GptTimers[i].timer_channel);
+
+    }
+
 }
+#endif
 
 /*
 Service ID[hex]: 0x03
@@ -145,11 +205,13 @@ Parameters (out): None
 Return value: Gpt_ValueType Elapsed timer value (in number of ticks)
 Description: Returns the time already elapsed.
 */
+#if (GPT_TIME_ELAPSED_API == STD_ON)
 Gpt_ValueType Gpt_GetTimeElapsed(Gpt_ChannelType Channel){
     if (GPT_NOT_INITIALIZED == Gpt_Status){
         return 0;
     }
 }
+#endif
 
 /*
 Service ID[hex]: 0x04
@@ -161,11 +223,13 @@ Parameters (out): None
 Return value: Gpt_ValueType Remaining timer value (in number of ticks)
 Description: Returns the time remaining until the target time is reached. 
 */
+#if (GPT_TIME_REMAINING_API == STD_ON)
 Gpt_ValueType Gpt_GetTimeRemaining(Gpt_ChannelType Channel){
     if (GPT_NOT_INITIALIZED == Gpt_Status){
         return 0;
     }
 }
+#endif
 
 /*
 Service ID[hex]: 0x05
@@ -183,6 +247,57 @@ void Gpt_StartTimer( Gpt_ChannelType Channel,Gpt_ValueType Value){
         return;
     }
 
+	volatile uint32* current_timer = NULL_PTR; /* a pointer to indicate what timer we will operate on  */
+
+    /* get the timer base address */
+    switch (Gpt_GptTimers[Channel].channel_id)
+    {
+    case GPT_TIMER0A:
+    case GPT_TIMER0B:
+        current_timer = (volatile uint32*)GPT_TIMER0_BASE_ADDRESS;
+        break;
+    
+    case GPT_TIMER1A:
+    case GPT_TIMER1B:
+        current_timer = (volatile uint32*)GPT_TIMER1_BASE_ADDRESS;
+        break;
+    
+    case GPT_TIMER2A:
+    case GPT_TIMER2B:
+        current_timer = (volatile uint32*)GPT_TIMER2_BASE_ADDRESS;
+        break;
+
+    case GPT_TIMER3A:
+    case GPT_TIMER3B:
+        current_timer = (volatile uint32*)GPT_TIMER3_BASE_ADDRESS;
+        break;
+
+    case SYSTICK_TIMER:
+        SYSTICK_RELOAD_REG = Value-1; /* set compare value */
+        SET_BIT(SYSTICK_CTRL_REG, 0); /* enable the timer to start counting */
+        return; /* return, no use for other code */
+        break;
+    default:
+        break;
+    }
+
+    if (Gpt_GptTimers[Channel].timer_channel == Channel_A){
+        /* set the prescale */
+        *(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMTAPR_REG_OFFSET) = Gpt_GptTimers[Channel].clocks_per_tick;
+
+        /* set the value */
+        *(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMTAILR_REG_OFFSET) = Value;
+
+    }else if (Gpt_GptTimers[Channel].timer_channel == Channel_B){
+        /* set the prescale */
+        *(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMTBPR_REG_OFFSET) = Gpt_GptTimers[Channel].clocks_per_tick;
+
+        /* set the value */
+        *(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMTBILR_REG_OFFSET) = Value;
+    }
+
+    /* enable the timer to start counting */
+    SET_BIT(*(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMCTL_REG_OFFSET) , Gpt_GptTimers[Channel].timer_channel);
 
 }
 
@@ -200,6 +315,7 @@ void Gpt_StopTimer(Gpt_ChannelType Channel){
     if (GPT_NOT_INITIALIZED == Gpt_Status){
         return;
     }
+
 	volatile uint32* current_timer = NULL_PTR; /* a pointer to indicate what timer we will operate on  */
 
     /* get the timer base address */
@@ -233,9 +349,8 @@ void Gpt_StopTimer(Gpt_ChannelType Channel){
         break;
     }
 
-    /* disable the timer */
+    /* disable the timer to stop counting */
     CLEAR_BIT(*(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMCTL_REG_OFFSET) , Gpt_GptTimers[Channel].timer_channel);
-
 }
 
 /*
@@ -248,6 +363,7 @@ Parameters (out): None
 Return value: None
 Description: Enables the interrupt notification for a channel (relevant in normal mode). 
 */
+#if (GPT_ENABLE_DISABLE_NOTIFICATION_API == STD_ON)
 void Gpt_EnableNotification(Gpt_ChannelType Channel){
     if (GPT_NOT_INITIALIZED == Gpt_Status){
         return;
@@ -280,6 +396,7 @@ void Gpt_EnableNotification(Gpt_ChannelType Channel){
 
     case SYSTICK_TIMER:
         SET_BIT(SYSTICK_CTRL_REG, 1); /* enable SysTick interrupts */
+        SET_BIT(SYSTICK_NVIC_INTERRUPT_REG ,15); /* enable systick timer interrupt in NVIC table */
         return; /* return, no use for code */
         break;
     default:
@@ -288,8 +405,8 @@ void Gpt_EnableNotification(Gpt_ChannelType Channel){
 
     /* enable interrupt */
     SET_BIT(*(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMIMR_REG_OFFSET) , Gpt_GptTimers[Channel].timer_channel);
-
 }
+#endif
 
 /*
 Service ID[hex]: 0x08
@@ -301,6 +418,7 @@ Parameters (out): None
 Return value: None
 Description: Disables the interrupt notification for a channel (relevant in normal mode)
 */
+#if (GPT_ENABLE_DISABLE_NOTIFICATION_API == STD_ON)
 void Gpt_DisableNotification(Gpt_ChannelType Channel){
     if (GPT_NOT_INITIALIZED == Gpt_Status){
         return;
@@ -332,8 +450,9 @@ void Gpt_DisableNotification(Gpt_ChannelType Channel){
         break;
 
     case SYSTICK_TIMER:
-        CLEAR_BIT(SYSTICK_CTRL_REG, 1); /* enable SysTick interrupts */
-        return; /* return, no use for other code */
+        CLEAR_BIT(SYSTICK_CTRL_REG, 1); /* disable SysTick interrupts */
+        CLEAR_BIT(SYSTICK_NVIC_INTERRUPT_REG ,15); /* disable systick timer interrupt in NVIC table */
+        return; /* return, no use for code */
         break;
     default:
         break;
@@ -341,8 +460,8 @@ void Gpt_DisableNotification(Gpt_ChannelType Channel){
 
     /* disable interrupt */
     CLEAR_BIT(*(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMIMR_REG_OFFSET) , Gpt_GptTimers[Channel].timer_channel);
-
 }
+#endif
 
 /*
 Service ID[hex]: 0x09
@@ -357,12 +476,14 @@ Parameters (out): None
 Return value: None
 Description: Sets the operation mode of the GPT. 
 */
+#if (GPT_WAKEUP_FUNCTIONALITY_API == STD_ON)
 void Gpt_SetMode(Gpt_ModeType Mode){
     if (GPT_NOT_INITIALIZED == Gpt_Status){
         return;
     }
 
 }
+#endif
 
 /*
 Service ID[hex]: 0x0a
@@ -374,11 +495,13 @@ Parameters (out): None
 Return value: None
 Description: Disables the wakeup interrupt of a channel (relevant in sleep mode)
 */
+#if (GPT_WAKEUP_FUNCTIONALITY_API == STD_ON)
 void Gpt_DisableWakeup(Gpt_ChannelType Channel){
     if (GPT_NOT_INITIALIZED == Gpt_Status){
         return;
     }
 }
+#endif
 
 /*
 Service ID[hex]: 0x0b
@@ -390,8 +513,10 @@ Parameters (out): None
 Return value: None
 Description: Enables the wakeup interrupt of a channel (relevant in sleep mode). 
 */
+#if (GPT_WAKEUP_FUNCTIONALITY_API == STD_ON)
 void Gpt_EnableWakeup(Gpt_ChannelType Channel){
     if (GPT_NOT_INITIALIZED == Gpt_Status){
         return;
     }
 }
+#endif
