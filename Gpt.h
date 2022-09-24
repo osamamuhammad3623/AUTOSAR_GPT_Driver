@@ -73,9 +73,19 @@
 /******************************************************************************
  *                      API Service Id Macros                                 *
 ******************************************************************************/
-#define GPT_GET_VERSION_INFO_SID    (uint8)0x00
-#define GPT_INIT_SID                (uint8)0x01
-#define GPT_DEINIT_SID              (uint8)0x02
+#define GPT_GET_VERSION_INFO_SID        (uint8)0x00
+#define GPT_INIT_SID                    (uint8)0x01
+#define GPT_DEINIT_SID                  (uint8)0x02
+#define GPT_GET_TIME_ELAPSED_SID        (uint8)0x03
+#define GPT_GET_TIME_REMAINING_SID      (uint8)0x04 
+#define GPT_START_TIMER_SID             (uint8)0x05
+#define GPT_STOP_TIMER_SID              (uint8)0x06
+#define GPT_ENABLE_NOTIFICATION_SID     (uint8)0x07
+#define GPT_DISABLE_NOTIFICATION_SID    (uint8)0x08
+#define GPT_SET_MODE_SID                (uint8)0x09
+#define GPT_DISABLE_WAKEUP_SID          (uint8)0x0a
+#define GPT_ENABLE_WAKEUP_SID           (uint8)0x0b  
+#define GPT_CHECK_WAKEUP_SID            (uint8)0x0c  
 
 /*******************************************************************************
  *                              Module Data Types                              *
@@ -91,11 +101,25 @@ typedef enum{
   GPT_MODE_NORMAL, GPT_MODE_SLEEP
 }Gpt_ModeType;
 
+/* Enum for timer running mode */
+typedef enum{
+  One_Shot, Periodic
+}Gpt_RunningModeType;
+
 /* This is the type of the data structure including the configuration set required for
-initializing the GPT timer unit[channel]. */
-typedef struct Gpt
+initializing the GPT timer unit[channel].
+  1. Timer Id
+  2. Running mode [one-shot or periodic]
+  3. Power mode [normal or sleep mode]
+  // Timer value are set by Gpt_StartTimer api
+  // Notification [interrupt] are disabled by default, and enabled by Gpt_EnableNotification api
+*/
+typedef struct
 {
-  /* data */
+  Gpt_ChannelType channel_id;
+  Gpt_RunningModeType running_mode;
+  Gpt_ModeType power_mode;
+
 }Gpt_ConfigChannel;
 
 /* Type of the external data structure containing the initialization data for this module. */
@@ -144,11 +168,16 @@ void Gpt_DisableWakeup(Gpt_ChannelType Channel);
 /* Enables the wakeup interrupt of a channel (relevant in sleep mode). */
 void Gpt_EnableWakeup(Gpt_ChannelType Channel);
 
+/* NOT IMPLEMENTED */
+//void Gpt_CheckWakeup(EcuM_WakeupSourceType WakeupSource);
+
+
 /*******************************************************************************
  *                       External Variables                                    *
 *******************************************************************************/
 /* Extern PB structures to be used by Gpt and other modules */
 extern const Gpt_ConfigType Gpt_Configuration;
+
 
 /*******************************************************************************
  *                       Timers IDs                                           *
