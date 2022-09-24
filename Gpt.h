@@ -112,7 +112,7 @@ typedef enum{
 }Gpt_TimerType;
 
 typedef enum{
-  Channel_A=0, Channel_B=7, CONCATENATED=0
+  Channel_A=0, Channel_B=8, CONCATENATED=0
 }Gpt_TimerChannel;
 
 /* This is the type of the data structure including the configuration set required for
