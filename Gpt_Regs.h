@@ -19,8 +19,7 @@
 #define GPT_TIMER1_BASE_ADDRESS           0x40031000
 #define GPT_TIMER2_BASE_ADDRESS           0x40032000
 #define GPT_TIMER3_BASE_ADDRESS           0x40033000
-#define GPT_TIMER4_BASE_ADDRESS           0x40034000
-#define GPT_TIMER5_BASE_ADDRESS           0x40035000
+
 #define GPT_WIDE_TIMER0_BASE_ADDRESS      0x40036000
 #define GPT_WIDE_TIMER1_BASE_ADDRESS      0x40037000
 #define GPT_WIDE_TIMER2_BASE_ADDRESS      0x4004C000
@@ -57,13 +56,16 @@
 #define GPT_GPTMTAPV_REG_OFFSET             0x064
 #define GPT_GPTMTBPV_REG_OFFSET             0x068
 
-
 /* SysTick Timer registers */
 #define SYSTICK_CTRL_REG          (*((volatile uint32 *)0xE000E010))
 #define SYSTICK_RELOAD_REG        (*((volatile uint32 *)0xE000E014))
 #define SYSTICK_CURRENT_REG       (*((volatile uint32 *)0xE000E018))
 
-/* RCC Registers */
-#define SYSCTL_REGCGC2_REG        		(*((volatile uint32 *)0x400FE108))
+/* Run mode clock control */
+#define SYSCTL_RCGCTIMER_REG            (*((volatile uint32 *)0x400FE604))
+#define SYSCTL_RCGCWTIMER_REG           (*((volatile uint32 *)0x400FE65C))
+/* Sleep mode clock control */
+#define SYSCTL_SCGCTIMER_REG            (*((volatile uint32 *)0x400FE704))
+#define SYSCTL_SCGCWTIMER_REG           (*((volatile uint32 *)0x400FE75C))
 
 #endif /* GPT_REGS_H */
