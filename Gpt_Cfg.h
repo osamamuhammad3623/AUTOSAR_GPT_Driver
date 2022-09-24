@@ -50,6 +50,6 @@
 /* Pre-compile option for Gpt_SetMode, Gpt_DisableWakeup, Gpt_EnableWakeup APIs */
 #define GPT_WAKEUP_FUNCTIONALITY_API            (STD_ON)
 
-#define GPT_NUMBER_OF_TIMERS                    (13U)
+#define GPT_NUMBER_OF_TIMERS                    (1U)
 
 #endif /* GPT_CFG_H */
