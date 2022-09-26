@@ -115,6 +115,17 @@ typedef enum{
   Channel_A=0, Channel_B=8, CONCATENATED=0
 }Gpt_TimerChannel;
 
+/* Enum for Timer channel state */
+typedef enum{
+  Initialized, Running, Stopped, Expired
+}Gpt_ChannelState;
+
+/* Enum for Interrupt state: enabled/disabled */
+typedef enum{
+  Interrupt_Disabled, Interrupt_Enabled
+}Gpt_InterruptState;
+
+
 /* This is the type of the data structure including the configuration set required for
 initializing the GPT timer unit[channel].
   - Timer Id
@@ -141,12 +152,27 @@ typedef struct
 
 }Gpt_ConfigChannel;
 
+
 /* Type of the external data structure containing the initialization data for this module. */
 typedef struct 
 {
-  Gpt_ConfigChannel timers[GPT_NUMBER_OF_TIMERS];
+  Gpt_ConfigChannel timers[GPT_CONFIGURED_TIMERS];
 }Gpt_ConfigType;
 
+
+/* Type-definition for dynamic attributes of timers
+  - State
+  - Interrupt notification (enabled/disabled)
+  - Channel Wakeup (enabled/disabled)
+*/
+typedef struct
+{
+  Gpt_ChannelType channel_id;
+  Gpt_ChannelState state;
+  Gpt_InterruptState interrupt_state;
+  Gpt_InterruptState wakeup_state;
+
+}Gpt_DynamicConfigType;
 
 /*******************************************************************************
  *                      Function Prototypes                                    *
