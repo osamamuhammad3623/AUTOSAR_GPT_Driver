@@ -4,6 +4,7 @@
 
 
 STATIC const Gpt_ConfigChannel * Gpt_GptTimers = NULL_PTR;
+STATIC Gpt_DynamicConfigType Gpt_dynamicTimers[GPT_CONFIGURED_TIMERS]; /* to hold dynamic attributes */
 STATIC uint8 Gpt_Status = GPT_NOT_INITIALIZED;
 
 /*
@@ -54,7 +55,7 @@ void Gpt_Init(const Gpt_ConfigType* ConfigPtr){
     
 	volatile uint32* current_timer = NULL_PTR; /* a pointer to indicate what timer we will operate on  */
 
-    for (uint8 i=0; i<GPT_NUMBER_OF_TIMERS; i++){
+    for (uint8 i=0; i<GPT_CONFIGURED_TIMERS; i++){
 
         /* get the timer base address */
         switch (Gpt_GptTimers[i].channel_id)
@@ -124,6 +125,12 @@ void Gpt_Init(const Gpt_ConfigType* ConfigPtr){
             SET_BIT(*(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMTBMR_REG_OFFSET), 4);
         }
 
+        /* store dynamic attributes */
+        Gpt_dynamicTimers[i].channel_id = i;
+        Gpt_dynamicTimers[i].interrupt_state = Interrupt_Disabled;
+        Gpt_dynamicTimers[i].wakeup_state = Interrupt_Disabled;
+        Gpt_dynamicTimers[i].state = Initialized;
+
     }
 }
 
@@ -145,7 +152,7 @@ void Gpt_DeInit(void){
     
     volatile uint32* current_timer = NULL_PTR; /* a pointer to indicate what timer we will operate on */
     uint8 timer_id=0;
-    for (uint8 i=0; i<GPT_NUMBER_OF_TIMERS; i++){
+    for (uint8 i=0; i<GPT_CONFIGURED_TIMERS; i++){
 
         /* get the timer base address */
         switch (Gpt_GptTimers[i].channel_id)
@@ -196,6 +203,8 @@ void Gpt_DeInit(void){
         /* disable interrupt */
         CLEAR_BIT(*(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMIMR_REG_OFFSET) , Gpt_GptTimers[i].timer_channel);
 
+        Gpt_dynamicTimers[i].interrupt_state = Interrupt_Disabled;
+        Gpt_dynamicTimers[i].state = Initialized;
     }
 
 }
@@ -348,6 +357,7 @@ void Gpt_StartTimer( Gpt_ChannelType Channel,Gpt_ValueType Value){
     /* enable the timer to start counting */
     SET_BIT(*(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMCTL_REG_OFFSET) , Gpt_GptTimers[Channel].timer_channel);
 
+    Gpt_dynamicTimers[Channel].state = Running;
 }
 
 /*
@@ -362,6 +372,16 @@ Description: Stops a timer channel.
 */
 void Gpt_StopTimer(Gpt_ChannelType Channel){
     if (GPT_NOT_INITIALIZED == Gpt_Status){
+        return;
+    }
+
+    /* If the function Gpt_StopTimer is called on a channel in state
+    "initialized", "stopped" or "expired", the function shall leave without any action 
+    */
+    if (Gpt_dynamicTimers[Channel].state == Initialized || \
+        Gpt_dynamicTimers[Channel].state == Stopped     || \
+        Gpt_dynamicTimers[Channel].state == Expired){
+
         return;
     }
 
@@ -400,6 +420,8 @@ void Gpt_StopTimer(Gpt_ChannelType Channel){
 
     /* disable the timer to stop counting */
     CLEAR_BIT(*(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMCTL_REG_OFFSET) , Gpt_GptTimers[Channel].timer_channel);
+
+    Gpt_dynamicTimers[Channel].state = Stopped;
 }
 
 /*
@@ -454,6 +476,8 @@ void Gpt_EnableNotification(Gpt_ChannelType Channel){
 
     /* enable interrupt */
     SET_BIT(*(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMIMR_REG_OFFSET) , Gpt_GptTimers[Channel].timer_channel);
+
+    Gpt_dynamicTimers[Channel].interrupt_state = Interrupt_Enabled;
 }
 #endif
 
@@ -509,6 +533,8 @@ void Gpt_DisableNotification(Gpt_ChannelType Channel){
 
     /* disable interrupt */
     CLEAR_BIT(*(volatile uint32 *)((volatile uint8 *)current_timer + GPT_GPTMIMR_REG_OFFSET) , Gpt_GptTimers[Channel].timer_channel);
+
+    Gpt_dynamicTimers[Channel].interrupt_state = Interrupt_Disabled;
 }
 #endif
 
@@ -531,6 +557,34 @@ void Gpt_SetMode(Gpt_ModeType Mode){
         return;
     }
 
+    if (Mode == GPT_MODE_NORMAL){
+        for (int i=0; i< GPT_CONFIGURED_TIMERS; i++){
+            if (Gpt_dynamicTimers[i].interrupt_state == Interrupt_Enabled){
+                Gpt_EnableNotification(Gpt_GptTimers[i].channel_id);
+            }else{
+                Gpt_DisableNotification(Gpt_GptTimers[i].channel_id);
+            }
+        }
+    }
+
+    else if (Mode == GPT_MODE_SLEEP){
+        for (int i=0; i< GPT_CONFIGURED_TIMERS; i++){
+            if (Gpt_dynamicTimers[i].wakeup_state == Interrupt_Enabled){
+                Gpt_EnableWakeup(Gpt_GptTimers[i].channel_id);
+            }else{
+                Gpt_DisableWakeup(Gpt_GptTimers[i].channel_id);
+            }
+
+            if (Gpt_dynamicTimers[i].state == Running && Gpt_dynamicTimers[i].wakeup_state == Interrupt_Disabled){
+                Gpt_StopTimer(Gpt_GptTimers[i].channel_id);
+                Gpt_dynamicTimers[i].state = Stopped;
+            }
+        }
+    }
+
+    else{
+        /* do nothing */
+    }
 }
 #endif
 
